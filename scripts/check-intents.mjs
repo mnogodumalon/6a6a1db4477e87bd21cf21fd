@@ -13,6 +13,12 @@
 // The docblock is checked too: app/services/intent_context.py derives
 // _agent_context/intents.json from it, which is how a LATER agent run finds a
 // flow worth reusing. Without it a flow is invisible to future runs as well.
+//
+// And the UTC day-shift trap is checked here as well, because nothing else
+// can: the same rule is gate 1 of check-dashboard.mjs, but that script reads
+// ONE file (src/pages/DashboardOverview.tsx). A flow step that writes a date
+// field with toISOString() was therefore outside every gate — even a run that
+// executes all of them.
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -65,9 +71,27 @@ if (pages.length > 0) {
     if (dialogImport) {
       errors.push(`${file}: imports the generic dialog '${dialogImport[1]}' — a wizard step uses its own small form (the generic dialogs stay on the CRUD pages)`);
     }
+
+    // 4. UTC day-shift trap — same rule as gate 1 of check-dashboard.mjs, which
+    //    only ever sees DashboardOverview.tsx. A wizard step writes date fields
+    //    DIRECTLY via the service, so this is exactly where the shift lands.
+    //    The offending lines are quoted VERBATIM (untrimmed) so the fix is a
+    //    direct Edit with that exact string — no re-Read to locate them.
+    if (src.includes('toISOString')) {
+      const lines = src.split('\n');
+      const hits = [];
+      for (let i = 0; i < lines.length && hits.length < 6; i++) {
+        if (lines[i].includes('toISOString')) hits.push(`    line ${i + 1}: ${lines[i]}`);
+      }
+      errors.push(
+        `${file}: toISOString() found — it is UTC, so the day flips at the wrong hour and the record lands on the neighbouring date. ` +
+        `Write date fields with date-fns format(): a date/date field → format(d, 'yyyy-MM-dd'), a date/datetimeminute field → format(d, "yyyy-MM-dd'T'HH:mm").` +
+        (hits.length ? '\n' + hits.join('\n') : ''),
+      );
+    }
   }
 
-  // 4. Every route needs a registry entry, or the flow is invisible in the
+  // 5. Every route needs a registry entry, or the flow is invisible in the
   //    sidebar even though its URL works.
   for (const path of routePaths) {
     if (!registryPaths.has(path)) {
@@ -75,12 +99,69 @@ if (pages.length > 0) {
     }
   }
 
-  // 5. …and the other way round: a registry entry without a route is a dead
+  // 6. …and the other way round: a registry entry without a route is a dead
   //    sidebar link.
   for (const path of registryPaths) {
     if (!routePaths.has(path)) {
       errors.push(`${APP}: registry lists '${path}' but no <Route path="${path.replace(/^\//, '')}"> exists — the sidebar link leads nowhere`);
     }
+  }
+
+  // 7. Flows exist, so the Phase-1 ghost rows must be gone. INTENTS_PENDING
+  //    lives outside the markers and is flipped by the orchestrator, not by
+  //    any file this gate already checks — leave it true and the sidebar
+  //    shows "werden erstellt…" forever next to the finished flows.
+  if (/export const INTENTS_PENDING = true/.test(registrySrc)) {
+    errors.push(`${REGISTRY}: INTENTS_PENDING is still true although ${pages.length} flow(s) exist — set it to false, the sidebar keeps showing ghost rows otherwise`);
+  }
+}
+
+// Runtime i18n: intent pages must render their UI text through makeT (all
+// three languages) — the dashboard has a live language switcher. Same rule
+// and same escape hatch as check-dashboard gate 21.
+for (const page of pages) {
+  const file = join(DIR, `${page}.tsx`);
+  const src = readFileSync(file, 'utf8');
+  const lines = src.split('\n');
+  // The closing `<` must start a tag (`</` or `<Tag`). Without that a
+  // comparison pair reads as JSX text: `x > 0 && (a.fields.b ?? 0) < y`
+  // matched, and the fixer dutifully annotated pure logic (live-seen).
+  const jsxText = />[^<>{}\n]*[A-Za-zÄÖÜäöüßÀ-ž]{3,}[^<>{}\n]*<[/A-Za-z]/;
+  const attrText = /\b(?:title|placeholder|label|aria-label|alt|emptyLabel|emptyText)=(?:\{\s*)?(?:"[^"{}]*[A-Za-zÄÖÜäöüßÀ-ž]{3,}[^"{}]*"|'[^'{}]*[A-Za-zÄÖÜäöüßÀ-ž]{3,}[^'{}]*')/;
+  const objText = /\b(?:title|label|name|emptyLabel|emptyText|hint|description)\s*:\s*(?:"[^"{}]*[A-Za-zÄÖÜäöüßÀ-ž]{3,}[^"{}]*"|'[^'{}]*[A-Za-zÄÖÜäöüßÀ-ž]{3,}[^'{}]*')/;
+  const hits = [];
+  for (let i = 0; i < lines.length && hits.length < 8; i++) {
+    const l = lines[i];
+    if (l.includes('i18n-exempt')) continue;
+    const trimmed = l.trim();
+    if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+    if (jsxText.test(l) || attrText.test(l) || objText.test(l)) hits.push(`    line ${i + 1}: ${l}`);
+  }
+  if (hits.length) {
+    errors.push(
+      `${file}: hardcoded UI text — define your strings ONCE via makeT from '@/i18n' ({ de, en }) and render {tt('key')}; ` +
+      `brand names/codes take /* i18n-exempt */ on the line.\n` + hits.join('\n')
+    );
+  }
+  // LOOKUP_OPTIONS labels are locale-aware getters — resolving them at module
+  // scope freezes one language at import time (same rule as check-dashboard 22).
+  // Statement-based: multi-line `.map(` statements escaped a per-line regex.
+  let optName = 'LOOKUP_OPTIONS';
+  const importM = src.match(/import\s*\{([^}]*)\}\s*from\s*'@\/types\/app'/);
+  const aliasM = importM && importM[1].match(/LOOKUP_OPTIONS\s+as\s+(\w+)/);
+  if (aliasM) optName = aliasM[1];
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^(?:export\s+)?const\s/.test(lines[i])) continue;
+    let j = i;
+    let stmt = lines[i];
+    while (!/;\s*$/.test(lines[j]) && j + 1 < lines.length && j - i < 12) {
+      j++;
+      stmt += '\n' + lines[j];
+    }
+    if (stmt.includes(optName) && /(?:\.label\b|label\s*:)/.test(stmt)) {
+      errors.push(`${file}:${i + 1}: module-scope LOOKUP_OPTIONS label read — move it inside the component body, the getters freeze at import otherwise:\n    ${lines[i]}`);
+    }
+    i = j;
   }
 }
 

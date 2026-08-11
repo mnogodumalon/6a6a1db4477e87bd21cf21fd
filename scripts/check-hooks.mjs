@@ -51,7 +51,10 @@ if (problems.length > 0) {
   }
   console.error(
     '\nMove every hook ABOVE the early returns (or drop the hook — a plain ' +
-    'function works when the value is not passed to a memoized child).',
+    'function works when the value is not passed to a memoized child).' +
+    '\nFix this with a TARGETED Edit on the flagged lines. Do NOT rewrite the ' +
+    'whole file: re-generating a large page to relocate one hook costs a ' +
+    'minute and risks losing work that already passed the other gates.',
   );
   process.exit(1);
 }

@@ -27,6 +27,7 @@ import type { ComputedContext } from '@/config/form-enhancements/types';
 import { applyFieldOrder, flattenFieldOrder, applyDefaults, evalComputed, numberInputProps, clampNumberValue, classifyComputed, extractApplookupRefs, mergeApplookupRefs, resolveApplookupRef } from '@/config/form-enhancements/types';
 import { formEnhancements, computedDeps, computedApplookupRefs } from '@/config/form-enhancements/Foerderantrag';
 import { AttachmentsSection } from '@/components/AttachmentsSection';
+import { t, appLabel, fieldLabel, lookupLabel, localeTag, CURRENCY } from '@/i18n';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem,
@@ -213,7 +214,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
       await onSubmit(clean as Foerderantrag['fields']);
       onClose();
     } catch (err) {
-      setSubmitError(err instanceof Error && err.message ? err.message : 'Speichern fehlgeschlagen.');
+      setSubmitError(err instanceof Error && err.message ? err.message : t('submit_error'));
     } finally {
       setSaving(false);
     }
@@ -287,7 +288,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
       setScanSuccess(true);
       setTimeout(() => setScanSuccess(false), 3000);
     } catch (err) {
-      console.error('Scan fehlgeschlagen:', err);
+      console.error(`${t('scan_error')}:`, err);
       alert(err instanceof Error ? err.message : String(err));
     } finally {
       setScanning(false);
@@ -322,12 +323,14 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     }
   }, []);
 
-  const DIALOG_INTENT = defaultValues ? 'Förderantrag bearbeiten' : 'Förderantrag hinzufügen';
+  const DIALOG_INTENT = defaultValues
+    ? t('edit_entity', { entity: appLabel('foerderantrag') })
+    : t('new_entity', { entity: appLabel('foerderantrag') });
 
   const fieldBlocks: Record<string, React.ReactNode> = {
     'anrede': (
       <div key="anrede" className="space-y-1.5">
-        <Label htmlFor="anrede">Anrede</Label>
+        <Label htmlFor="anrede">{fieldLabel('foerderantrag', 'anrede')}</Label>
         <div role="radiogroup" className="flex flex-wrap gap-1.5">
           <button
             type="button"
@@ -340,7 +343,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 : 'bg-background text-foreground border-input hover:bg-accent'
             }`}
           >
-            Herr
+            {lookupLabel('foerderantrag', 'anrede', 'herr') ?? 'Herr'}
           </button>
           <button
             type="button"
@@ -353,7 +356,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 : 'bg-background text-foreground border-input hover:bg-accent'
             }`}
           >
-            Frau
+            {lookupLabel('foerderantrag', 'anrede', 'frau') ?? 'Frau'}
           </button>
           <button
             type="button"
@@ -366,7 +369,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 : 'bg-background text-foreground border-input hover:bg-accent'
             }`}
           >
-            Divers
+            {lookupLabel('foerderantrag', 'anrede', 'divers') ?? 'Divers'}
           </button>
           <button
             type="button"
@@ -379,47 +382,47 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 : 'bg-background text-foreground border-input hover:bg-accent'
             }`}
           >
-            Organisation
+            {lookupLabel('foerderantrag', 'anrede', 'organisation') ?? 'Organisation'}
           </button>
         </div>
       </div>
     ),
     'vorname': (
       <div key="vorname" className="space-y-1.5">
-        <Label htmlFor="vorname">Vorname <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="vorname">{fieldLabel('foerderantrag', 'vorname')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Input
           id="vorname"
-          placeholder="z. B. Max"
+          placeholder=""
           value={fields.vorname ?? ''}
           onChange={e => setFields(f => ({ ...f, vorname: e.target.value }))}
           required
         />
         {showErrors && !fields.vorname && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'nachname': (
       <div key="nachname" className="space-y-1.5">
-        <Label htmlFor="nachname">Nachname <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="nachname">{fieldLabel('foerderantrag', 'nachname')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Input
           id="nachname"
-          placeholder="z. B. Müller"
+          placeholder=""
           value={fields.nachname ?? ''}
           onChange={e => setFields(f => ({ ...f, nachname: e.target.value }))}
           required
         />
         {showErrors && !fields.nachname && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'organisation_name': (
       <div key="organisation_name" className="space-y-1.5">
-        <Label htmlFor="organisation_name">Name der Organisation / Institution</Label>
+        <Label htmlFor="organisation_name">{fieldLabel('foerderantrag', 'organisation_name')}</Label>
         <Input
           id="organisation_name"
-          placeholder="z. B. Förderverein Bildung e. V."
+          placeholder=""
           value={fields.organisation_name ?? ''}
           onChange={e => setFields(f => ({ ...f, organisation_name: e.target.value }))}
         />
@@ -427,118 +430,118 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'rechtsform': (
       <div key="rechtsform" className="space-y-1.5">
-        <Label htmlFor="rechtsform">Rechtsform</Label>
+        <Label htmlFor="rechtsform">{fieldLabel('foerderantrag', 'rechtsform')}</Label>
         <Select
           value={lookupKey(fields.rechtsform) ?? ''}
           onValueChange={v => setFields(f => ({ ...f, rechtsform: v === 'none' ? undefined : v as any }))}
         >
-          <SelectTrigger id="rechtsform" className="max-sm:h-11"><SelectValue placeholder="Wähle die Rechtsform" /></SelectTrigger>
+          <SelectTrigger id="rechtsform" className="max-sm:h-11"><SelectValue placeholder="" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="none">—</SelectItem>
-            <SelectItem value="einzelperson">Einzelperson</SelectItem>
-            <SelectItem value="verein">Verein (e. V.)</SelectItem>
-            <SelectItem value="gmbh">GmbH</SelectItem>
-            <SelectItem value="ag">AG</SelectItem>
-            <SelectItem value="stiftung">Stiftung</SelectItem>
-            <SelectItem value="koerperschaft">Körperschaft des öffentlichen Rechts</SelectItem>
-            <SelectItem value="sonstige">Sonstige</SelectItem>
+            <SelectItem value="einzelperson">{lookupLabel('foerderantrag', 'rechtsform', 'einzelperson') ?? 'Einzelperson'}</SelectItem>
+            <SelectItem value="verein">{lookupLabel('foerderantrag', 'rechtsform', 'verein') ?? 'Verein (e. V.)'}</SelectItem>
+            <SelectItem value="gmbh">{lookupLabel('foerderantrag', 'rechtsform', 'gmbh') ?? 'GmbH'}</SelectItem>
+            <SelectItem value="ag">{lookupLabel('foerderantrag', 'rechtsform', 'ag') ?? 'AG'}</SelectItem>
+            <SelectItem value="stiftung">{lookupLabel('foerderantrag', 'rechtsform', 'stiftung') ?? 'Stiftung'}</SelectItem>
+            <SelectItem value="koerperschaft">{lookupLabel('foerderantrag', 'rechtsform', 'koerperschaft') ?? 'Körperschaft des öffentlichen Rechts'}</SelectItem>
+            <SelectItem value="sonstige">{lookupLabel('foerderantrag', 'rechtsform', 'sonstige') ?? 'Sonstige'}</SelectItem>
           </SelectContent>
         </Select>
       </div>
     ),
     'strasse': (
       <div key="strasse" className="space-y-1.5">
-        <Label htmlFor="strasse">Straße <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="strasse">{fieldLabel('foerderantrag', 'strasse')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Input
           id="strasse"
-          placeholder="z. B. Hauptstraße"
+          placeholder=""
           value={fields.strasse ?? ''}
           onChange={e => setFields(f => ({ ...f, strasse: e.target.value }))}
           required
         />
         {showErrors && !fields.strasse && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'hausnummer': (
       <div key="hausnummer" className="space-y-1.5">
-        <Label htmlFor="hausnummer">Hausnummer <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="hausnummer">{fieldLabel('foerderantrag', 'hausnummer')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Input
           id="hausnummer"
-          placeholder="z. B. 42 a"
+          placeholder=""
           value={fields.hausnummer ?? ''}
           onChange={e => setFields(f => ({ ...f, hausnummer: e.target.value }))}
           required
         />
         {showErrors && !fields.hausnummer && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'postleitzahl': (
       <div key="postleitzahl" className="space-y-1.5">
-        <Label htmlFor="postleitzahl">Postleitzahl <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="postleitzahl">{fieldLabel('foerderantrag', 'postleitzahl')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Input
           id="postleitzahl"
-          placeholder="z. B. 10115"
+          placeholder=""
           value={fields.postleitzahl ?? ''}
           onChange={e => setFields(f => ({ ...f, postleitzahl: e.target.value }))}
           required
         />
         {showErrors && !fields.postleitzahl && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'ort': (
       <div key="ort" className="space-y-1.5">
-        <Label htmlFor="ort">Ort <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="ort">{fieldLabel('foerderantrag', 'ort')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Input
           id="ort"
-          placeholder="z. B. Berlin"
+          placeholder=""
           value={fields.ort ?? ''}
           onChange={e => setFields(f => ({ ...f, ort: e.target.value }))}
           required
         />
         {showErrors && !fields.ort && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'bundesland': (
       <div key="bundesland" className="space-y-1.5">
-        <Label htmlFor="bundesland">Bundesland</Label>
+        <Label htmlFor="bundesland">{fieldLabel('foerderantrag', 'bundesland')}</Label>
         <Select
           value={lookupKey(fields.bundesland) ?? ''}
           onValueChange={v => setFields(f => ({ ...f, bundesland: v === 'none' ? undefined : v as any }))}
         >
-          <SelectTrigger id="bundesland" className="max-sm:h-11"><SelectValue placeholder="Wähle ein Bundesland" /></SelectTrigger>
+          <SelectTrigger id="bundesland" className="max-sm:h-11"><SelectValue placeholder="" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="none">—</SelectItem>
-            <SelectItem value="bw">Baden-Württemberg</SelectItem>
-            <SelectItem value="by">Bayern</SelectItem>
-            <SelectItem value="be">Berlin</SelectItem>
-            <SelectItem value="bb">Brandenburg</SelectItem>
-            <SelectItem value="hb">Bremen</SelectItem>
-            <SelectItem value="hh">Hamburg</SelectItem>
-            <SelectItem value="he">Hessen</SelectItem>
-            <SelectItem value="mv">Mecklenburg-Vorpommern</SelectItem>
-            <SelectItem value="ni">Niedersachsen</SelectItem>
-            <SelectItem value="nw">Nordrhein-Westfalen</SelectItem>
-            <SelectItem value="rp">Rheinland-Pfalz</SelectItem>
-            <SelectItem value="sl">Saarland</SelectItem>
-            <SelectItem value="sn">Sachsen</SelectItem>
-            <SelectItem value="st">Sachsen-Anhalt</SelectItem>
-            <SelectItem value="sh">Schleswig-Holstein</SelectItem>
-            <SelectItem value="th">Thüringen</SelectItem>
+            <SelectItem value="bw">{lookupLabel('foerderantrag', 'bundesland', 'bw') ?? 'Baden-Württemberg'}</SelectItem>
+            <SelectItem value="by">{lookupLabel('foerderantrag', 'bundesland', 'by') ?? 'Bayern'}</SelectItem>
+            <SelectItem value="be">{lookupLabel('foerderantrag', 'bundesland', 'be') ?? 'Berlin'}</SelectItem>
+            <SelectItem value="bb">{lookupLabel('foerderantrag', 'bundesland', 'bb') ?? 'Brandenburg'}</SelectItem>
+            <SelectItem value="hb">{lookupLabel('foerderantrag', 'bundesland', 'hb') ?? 'Bremen'}</SelectItem>
+            <SelectItem value="hh">{lookupLabel('foerderantrag', 'bundesland', 'hh') ?? 'Hamburg'}</SelectItem>
+            <SelectItem value="he">{lookupLabel('foerderantrag', 'bundesland', 'he') ?? 'Hessen'}</SelectItem>
+            <SelectItem value="mv">{lookupLabel('foerderantrag', 'bundesland', 'mv') ?? 'Mecklenburg-Vorpommern'}</SelectItem>
+            <SelectItem value="ni">{lookupLabel('foerderantrag', 'bundesland', 'ni') ?? 'Niedersachsen'}</SelectItem>
+            <SelectItem value="nw">{lookupLabel('foerderantrag', 'bundesland', 'nw') ?? 'Nordrhein-Westfalen'}</SelectItem>
+            <SelectItem value="rp">{lookupLabel('foerderantrag', 'bundesland', 'rp') ?? 'Rheinland-Pfalz'}</SelectItem>
+            <SelectItem value="sl">{lookupLabel('foerderantrag', 'bundesland', 'sl') ?? 'Saarland'}</SelectItem>
+            <SelectItem value="sn">{lookupLabel('foerderantrag', 'bundesland', 'sn') ?? 'Sachsen'}</SelectItem>
+            <SelectItem value="st">{lookupLabel('foerderantrag', 'bundesland', 'st') ?? 'Sachsen-Anhalt'}</SelectItem>
+            <SelectItem value="sh">{lookupLabel('foerderantrag', 'bundesland', 'sh') ?? 'Schleswig-Holstein'}</SelectItem>
+            <SelectItem value="th">{lookupLabel('foerderantrag', 'bundesland', 'th') ?? 'Thüringen'}</SelectItem>
           </SelectContent>
         </Select>
       </div>
     ),
     'telefon': (
       <div key="telefon" className="space-y-1.5">
-        <Label htmlFor="telefon">Telefonnummer</Label>
+        <Label htmlFor="telefon">{fieldLabel('foerderantrag', 'telefon')}</Label>
         <Input
           id="telefon"
           value={fields.telefon ?? ''}
@@ -548,22 +551,22 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'email': (
       <div key="email" className="space-y-1.5">
-        <Label htmlFor="email">E-Mail-Adresse <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="email">{fieldLabel('foerderantrag', 'email')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Input
           id="email"
           type="email"
-          placeholder="z. B. kontakt@beispiel.de"
+          placeholder=""
           value={fields.email ?? ''}
           onChange={e => setFields(f => ({ ...f, email: e.target.value }))}
         />
         {showErrors && !fields.email && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'webseite': (
       <div key="webseite" className="space-y-1.5">
-        <Label htmlFor="webseite">Webseite</Label>
+        <Label htmlFor="webseite">{fieldLabel('foerderantrag', 'webseite')}</Label>
         <Input
           id="webseite"
           value={fields.webseite ?? ''}
@@ -573,127 +576,127 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'projekttitel': (
       <div key="projekttitel" className="space-y-1.5">
-        <Label htmlFor="projekttitel">Projekttitel <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="projekttitel">{fieldLabel('foerderantrag', 'projekttitel')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Input
           id="projekttitel"
-          placeholder="Kurzer, prägnanter Titel"
+          placeholder=""
           value={fields.projekttitel ?? ''}
           onChange={e => setFields(f => ({ ...f, projekttitel: e.target.value }))}
           required
         />
         {showErrors && !fields.projekttitel && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'projektkategorie': (
       <div key="projektkategorie" className="space-y-1.5">
-        <Label htmlFor="projektkategorie">Projektkategorie <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="projektkategorie">{fieldLabel('foerderantrag', 'projektkategorie')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Select
           value={lookupKey(fields.projektkategorie) ?? ''}
           onValueChange={v => setFields(f => ({ ...f, projektkategorie: v === 'none' ? undefined : v as any }))}
         >
-          <SelectTrigger id="projektkategorie" className="max-sm:h-11"><SelectValue placeholder="Wähle die beste Kategorie" /></SelectTrigger>
+          <SelectTrigger id="projektkategorie" className="max-sm:h-11"><SelectValue placeholder="" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="none">—</SelectItem>
-            <SelectItem value="bildung">Bildung & Forschung</SelectItem>
-            <SelectItem value="soziales">Soziales & Integration</SelectItem>
-            <SelectItem value="umwelt">Umwelt & Nachhaltigkeit</SelectItem>
-            <SelectItem value="kultur">Kultur & Kunst</SelectItem>
-            <SelectItem value="digitalisierung">Digitalisierung & Innovation</SelectItem>
-            <SelectItem value="gesundheit">Gesundheit & Sport</SelectItem>
-            <SelectItem value="wirtschaft">Wirtschaft & Beschäftigung</SelectItem>
-            <SelectItem value="sonstiges">Sonstiges</SelectItem>
+            <SelectItem value="bildung">{lookupLabel('foerderantrag', 'projektkategorie', 'bildung') ?? 'Bildung & Forschung'}</SelectItem>
+            <SelectItem value="soziales">{lookupLabel('foerderantrag', 'projektkategorie', 'soziales') ?? 'Soziales & Integration'}</SelectItem>
+            <SelectItem value="umwelt">{lookupLabel('foerderantrag', 'projektkategorie', 'umwelt') ?? 'Umwelt & Nachhaltigkeit'}</SelectItem>
+            <SelectItem value="kultur">{lookupLabel('foerderantrag', 'projektkategorie', 'kultur') ?? 'Kultur & Kunst'}</SelectItem>
+            <SelectItem value="digitalisierung">{lookupLabel('foerderantrag', 'projektkategorie', 'digitalisierung') ?? 'Digitalisierung & Innovation'}</SelectItem>
+            <SelectItem value="gesundheit">{lookupLabel('foerderantrag', 'projektkategorie', 'gesundheit') ?? 'Gesundheit & Sport'}</SelectItem>
+            <SelectItem value="wirtschaft">{lookupLabel('foerderantrag', 'projektkategorie', 'wirtschaft') ?? 'Wirtschaft & Beschäftigung'}</SelectItem>
+            <SelectItem value="sonstiges">{lookupLabel('foerderantrag', 'projektkategorie', 'sonstiges') ?? 'Sonstiges'}</SelectItem>
           </SelectContent>
         </Select>
         {showErrors && !fields.projektkategorie && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'projektbeschreibung': (
       <div key="projektbeschreibung" className="space-y-1.5">
-        <Label htmlFor="projektbeschreibung">Projektbeschreibung <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="projektbeschreibung">{fieldLabel('foerderantrag', 'projektbeschreibung')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Textarea
           id="projektbeschreibung"
-          placeholder="Was, wie, warum? Umfang, Methoden, Bedeutung für die Zielgruppe..."
+          placeholder=""
           value={fields.projektbeschreibung ?? ''}
           onChange={e => setFields(f => ({ ...f, projektbeschreibung: e.target.value }))}
           rows={3}
         />
         {showErrors && !fields.projektbeschreibung && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'zielgruppe': (
       <div key="zielgruppe" className="space-y-1.5">
-        <Label htmlFor="zielgruppe">Zielgruppe <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="zielgruppe">{fieldLabel('foerderantrag', 'zielgruppe')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Textarea
           id="zielgruppe"
-          placeholder="Wer profitiert? Alter, Qualifikation, Besonderheiten..."
+          placeholder=""
           value={fields.zielgruppe ?? ''}
           onChange={e => setFields(f => ({ ...f, zielgruppe: e.target.value }))}
           rows={3}
         />
         {showErrors && !fields.zielgruppe && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'projektziele': (
       <div key="projektziele" className="space-y-1.5">
-        <Label htmlFor="projektziele">Projektziele <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="projektziele">{fieldLabel('foerderantrag', 'projektziele')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Textarea
           id="projektziele"
-          placeholder="Was soll konkret erreicht werden? Messbar und realistisch..."
+          placeholder=""
           value={fields.projektziele ?? ''}
           onChange={e => setFields(f => ({ ...f, projektziele: e.target.value }))}
           rows={3}
         />
         {showErrors && !fields.projektziele && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'projektstart': (
       <div key="projektstart" className="space-y-1.5">
-        <Label htmlFor="projektstart">Geplanter Projektbeginn <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="projektstart">{fieldLabel('foerderantrag', 'projektstart')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <DatePicker
           id="projektstart"
-          placeholder="Wann startet das Projekt?"
+          placeholder=""
           mode="date"
           value={fields.projektstart ?? null}
           onChange={v => setFields(f => ({ ...f, projektstart: v ?? undefined }))}
           required
         />
         {showErrors && !fields.projektstart && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'projektende': (
       <div key="projektende" className="space-y-1.5">
-        <Label htmlFor="projektende">Geplantes Projektende <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="projektende">{fieldLabel('foerderantrag', 'projektende')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <DatePicker
           id="projektende"
-          placeholder="Wann endet das Projekt?"
+          placeholder=""
           mode="date"
           value={fields.projektende ?? null}
           onChange={v => setFields(f => ({ ...f, projektende: v ?? undefined }))}
           required
         />
         {showErrors && !fields.projektende && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'projektort': (
       <div key="projektort" className="space-y-1.5">
-        <Label htmlFor="projektort">Durchführungsort</Label>
+        <Label htmlFor="projektort">{fieldLabel('foerderantrag', 'projektort')}</Label>
         <Input
           id="projektort"
-          placeholder="z. B. Berlin, Mitte"
+          placeholder=""
           value={fields.projektort ?? ''}
           onChange={e => setFields(f => ({ ...f, projektort: e.target.value }))}
         />
@@ -701,13 +704,13 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'anzahl_beguenstigte': (
       <div key="anzahl_beguenstigte" className="space-y-1.5">
-        <Label htmlFor="anzahl_beguenstigte">Voraussichtliche Anzahl der Begünstigten</Label>
+        <Label htmlFor="anzahl_beguenstigte">{fieldLabel('foerderantrag', 'anzahl_beguenstigte')}</Label>
         <Input
           id="anzahl_beguenstigte"
           type="number"
           step="any"
           {...numberInputProps(formEnhancements, 'anzahl_beguenstigte')}
-          placeholder="z. B. 150"
+          placeholder=""
           value={fields.anzahl_beguenstigte !== undefined ? fields.anzahl_beguenstigte : (computedValues['anzahl_beguenstigte'] ?? '')}
           onChange={e => setFields(f => ({ ...f, anzahl_beguenstigte: clampNumberValue(formEnhancements, 'anzahl_beguenstigte', e.target.value) }))}
         />
@@ -715,36 +718,36 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'bereits_durchgefuehrt': (
       <div key="bereits_durchgefuehrt" className="space-y-1.5">
-        <Label htmlFor="bereits_durchgefuehrt">Wurde das Projekt bereits begonnen?</Label>
+        <Label htmlFor="bereits_durchgefuehrt">{fieldLabel('foerderantrag', 'bereits_durchgefuehrt')}</Label>
         <div className="flex items-center gap-2 pt-1">
           <Checkbox
             id="bereits_durchgefuehrt"
             checked={!!fields.bereits_durchgefuehrt}
             onCheckedChange={(v) => setFields(f => ({ ...f, bereits_durchgefuehrt: !!v }))}
           />
-          <Label htmlFor="bereits_durchgefuehrt" className="font-normal">Wurde das Projekt bereits begonnen?</Label>
+          <Label htmlFor="bereits_durchgefuehrt" className="font-normal">{fieldLabel('foerderantrag', 'bereits_durchgefuehrt')}</Label>
         </div>
       </div>
     ),
     'vorherige_foerderung': (
       <div key="vorherige_foerderung" className="space-y-1.5">
-        <Label htmlFor="vorherige_foerderung">Wurde das Projekt bereits gefördert?</Label>
+        <Label htmlFor="vorherige_foerderung">{fieldLabel('foerderantrag', 'vorherige_foerderung')}</Label>
         <div className="flex items-center gap-2 pt-1">
           <Checkbox
             id="vorherige_foerderung"
             checked={!!fields.vorherige_foerderung}
             onCheckedChange={(v) => setFields(f => ({ ...f, vorherige_foerderung: !!v }))}
           />
-          <Label htmlFor="vorherige_foerderung" className="font-normal">Wurde das Projekt bereits gefördert?</Label>
+          <Label htmlFor="vorherige_foerderung" className="font-normal">{fieldLabel('foerderantrag', 'vorherige_foerderung')}</Label>
         </div>
       </div>
     ),
     'vorherige_foerderung_beschreibung': (
       <div key="vorherige_foerderung_beschreibung" className="space-y-1.5">
-        <Label htmlFor="vorherige_foerderung_beschreibung">Angaben zur bisherigen Förderung</Label>
+        <Label htmlFor="vorherige_foerderung_beschreibung">{fieldLabel('foerderantrag', 'vorherige_foerderung_beschreibung')}</Label>
         <Textarea
           id="vorherige_foerderung_beschreibung"
-          placeholder="Welche Förderung, von wem, wie lange, Ergebnisse..."
+          placeholder=""
           value={fields.vorherige_foerderung_beschreibung ?? ''}
           onChange={e => setFields(f => ({ ...f, vorherige_foerderung_beschreibung: e.target.value }))}
           rows={3}
@@ -753,47 +756,47 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'gesamtkosten': (
       <div key="gesamtkosten" className="space-y-1.5">
-        <Label htmlFor="gesamtkosten">Gesamtkosten des Projekts (€) <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="gesamtkosten">{fieldLabel('foerderantrag', 'gesamtkosten')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Input
           id="gesamtkosten"
           type="number"
           step="any"
           {...numberInputProps(formEnhancements, 'gesamtkosten')}
-          placeholder="z. B. 25000,00"
+          placeholder=""
           value={fields.gesamtkosten !== undefined ? fields.gesamtkosten : (computedValues['gesamtkosten'] ?? '')}
           onChange={e => setFields(f => ({ ...f, gesamtkosten: clampNumberValue(formEnhancements, 'gesamtkosten', e.target.value) }))}
         />
         {showErrors && !fields.gesamtkosten && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'beantragte_foerdersumme': (
       <div key="beantragte_foerdersumme" className="space-y-1.5">
-        <Label htmlFor="beantragte_foerdersumme">Beantragte Fördersumme (€) <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="beantragte_foerdersumme">{fieldLabel('foerderantrag', 'beantragte_foerdersumme')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Input
           id="beantragte_foerdersumme"
           type="number"
           step="any"
           {...numberInputProps(formEnhancements, 'beantragte_foerdersumme')}
-          placeholder="z. B. 15000,00"
+          placeholder=""
           value={fields.beantragte_foerdersumme !== undefined ? fields.beantragte_foerdersumme : (computedValues['beantragte_foerdersumme'] ?? '')}
           onChange={e => setFields(f => ({ ...f, beantragte_foerdersumme: clampNumberValue(formEnhancements, 'beantragte_foerdersumme', e.target.value) }))}
         />
         {showErrors && !fields.beantragte_foerdersumme && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'eigenanteil': (
       <div key="eigenanteil" className="space-y-1.5">
-        <Label htmlFor="eigenanteil">Eigenanteil (€)</Label>
+        <Label htmlFor="eigenanteil">{fieldLabel('foerderantrag', 'eigenanteil')}</Label>
         <Input
           id="eigenanteil"
           type="number"
           step="any"
           {...numberInputProps(formEnhancements, 'eigenanteil')}
-          placeholder="z. B. 5000,00 oder wird berechnet"
+          placeholder=""
           value={fields.eigenanteil !== undefined ? fields.eigenanteil : (computedValues['eigenanteil'] ?? '')}
           onChange={e => setFields(f => ({ ...f, eigenanteil: clampNumberValue(formEnhancements, 'eigenanteil', e.target.value) }))}
         />
@@ -801,13 +804,13 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'drittmittel': (
       <div key="drittmittel" className="space-y-1.5">
-        <Label htmlFor="drittmittel">Drittmittel / weitere Fördermittel (€)</Label>
+        <Label htmlFor="drittmittel">{fieldLabel('foerderantrag', 'drittmittel')}</Label>
         <Input
           id="drittmittel"
           type="number"
           step="any"
           {...numberInputProps(formEnhancements, 'drittmittel')}
-          placeholder="z. B. 5000,00"
+          placeholder=""
           value={fields.drittmittel !== undefined ? fields.drittmittel : (computedValues['drittmittel'] ?? '')}
           onChange={e => setFields(f => ({ ...f, drittmittel: clampNumberValue(formEnhancements, 'drittmittel', e.target.value) }))}
         />
@@ -815,10 +818,10 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'drittmittel_herkunft': (
       <div key="drittmittel_herkunft" className="space-y-1.5">
-        <Label htmlFor="drittmittel_herkunft">Herkunft der Drittmittel</Label>
+        <Label htmlFor="drittmittel_herkunft">{fieldLabel('foerderantrag', 'drittmittel_herkunft')}</Label>
         <Textarea
           id="drittmittel_herkunft"
-          placeholder="Von welchen Partnern, Stiftungen, Spender..."
+          placeholder=""
           value={fields.drittmittel_herkunft ?? ''}
           onChange={e => setFields(f => ({ ...f, drittmittel_herkunft: e.target.value }))}
           rows={3}
@@ -827,22 +830,22 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'verwendungszweck': (
       <div key="verwendungszweck" className="space-y-1.5">
-        <Label htmlFor="verwendungszweck">Geplante Mittelverwendung <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="verwendungszweck">{fieldLabel('foerderantrag', 'verwendungszweck')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <Textarea
           id="verwendungszweck"
-          placeholder="Personal, Material, Ausrüstung, Reisen, sonstige Kosten..."
+          placeholder=""
           value={fields.verwendungszweck ?? ''}
           onChange={e => setFields(f => ({ ...f, verwendungszweck: e.target.value }))}
           rows={3}
         />
         {showErrors && !fields.verwendungszweck && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
     'foerderart': (
       <div key="foerderart" className="space-y-1.5">
-        <Label htmlFor="foerderart">Art der Förderung</Label>
+        <Label htmlFor="foerderart">{fieldLabel('foerderantrag', 'foerderart')}</Label>
         <div role="radiogroup" className="flex flex-wrap gap-1.5">
           <button
             type="button"
@@ -855,7 +858,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 : 'bg-background text-foreground border-input hover:bg-accent'
             }`}
           >
-            Zuschuss
+            {lookupLabel('foerderantrag', 'foerderart', 'zuschuss') ?? 'Zuschuss'}
           </button>
           <button
             type="button"
@@ -868,7 +871,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 : 'bg-background text-foreground border-input hover:bg-accent'
             }`}
           >
-            Darlehen
+            {lookupLabel('foerderantrag', 'foerderart', 'darlehen') ?? 'Darlehen'}
           </button>
           <button
             type="button"
@@ -881,7 +884,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 : 'bg-background text-foreground border-input hover:bg-accent'
             }`}
           >
-            Sachleistung
+            {lookupLabel('foerderantrag', 'foerderart', 'sachleistung') ?? 'Sachleistung'}
           </button>
           <button
             type="button"
@@ -894,14 +897,14 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 : 'bg-background text-foreground border-input hover:bg-accent'
             }`}
           >
-            Sonstiges
+            {lookupLabel('foerderantrag', 'foerderart', 'sonstiges_foerderart') ?? 'Sonstiges'}
           </button>
         </div>
       </div>
     ),
     'anlagen': (
       <div key="anlagen" className="space-y-1.5">
-        <Label htmlFor="anlagen">Beizufügende Unterlagen</Label>
+        <Label htmlFor="anlagen">{fieldLabel('foerderantrag', 'anlagen')}</Label>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Checkbox
@@ -915,7 +918,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 });
               }}
             />
-            <Label htmlFor="anlagen_projektplan" className="font-normal">Projektplan</Label>
+            <Label htmlFor="anlagen_projektplan" className="font-normal">{lookupLabel('foerderantrag', 'anlagen', 'projektplan') ?? 'Projektplan'}</Label>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
@@ -929,7 +932,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 });
               }}
             />
-            <Label htmlFor="anlagen_kostenaufstellung" className="font-normal">Kostenaufstellung</Label>
+            <Label htmlFor="anlagen_kostenaufstellung" className="font-normal">{lookupLabel('foerderantrag', 'anlagen', 'kostenaufstellung') ?? 'Kostenaufstellung'}</Label>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
@@ -943,7 +946,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 });
               }}
             />
-            <Label htmlFor="anlagen_vereinsregister" className="font-normal">Vereinsregisterauszug</Label>
+            <Label htmlFor="anlagen_vereinsregister" className="font-normal">{lookupLabel('foerderantrag', 'anlagen', 'vereinsregister') ?? 'Vereinsregisterauszug'}</Label>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
@@ -957,7 +960,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 });
               }}
             />
-            <Label htmlFor="anlagen_handelsregister" className="font-normal">Handelsregisterauszug</Label>
+            <Label htmlFor="anlagen_handelsregister" className="font-normal">{lookupLabel('foerderantrag', 'anlagen', 'handelsregister') ?? 'Handelsregisterauszug'}</Label>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
@@ -971,7 +974,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 });
               }}
             />
-            <Label htmlFor="anlagen_satzung" className="font-normal">Satzung</Label>
+            <Label htmlFor="anlagen_satzung" className="font-normal">{lookupLabel('foerderantrag', 'anlagen', 'satzung') ?? 'Satzung'}</Label>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
@@ -985,7 +988,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 });
               }}
             />
-            <Label htmlFor="anlagen_jahresabschluss" className="font-normal">Jahresabschluss / Bilanz</Label>
+            <Label htmlFor="anlagen_jahresabschluss" className="font-normal">{lookupLabel('foerderantrag', 'anlagen', 'jahresabschluss') ?? 'Jahresabschluss / Bilanz'}</Label>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
@@ -999,7 +1002,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 });
               }}
             />
-            <Label htmlFor="anlagen_referenzen" className="font-normal">Referenzen / Nachweise</Label>
+            <Label htmlFor="anlagen_referenzen" className="font-normal">{lookupLabel('foerderantrag', 'anlagen', 'referenzen') ?? 'Referenzen / Nachweise'}</Label>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
@@ -1013,14 +1016,14 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 });
               }}
             />
-            <Label htmlFor="anlagen_sonstige_unterlagen" className="font-normal">Sonstige Unterlagen</Label>
+            <Label htmlFor="anlagen_sonstige_unterlagen" className="font-normal">{lookupLabel('foerderantrag', 'anlagen', 'sonstige_unterlagen') ?? 'Sonstige Unterlagen'}</Label>
           </div>
         </div>
       </div>
     ),
     'dateiupload': (
       <div key="dateiupload" className="space-y-1.5">
-        <Label htmlFor="dateiupload">Dokumente hochladen</Label>
+        <Label htmlFor="dateiupload">{fieldLabel('foerderantrag', 'dateiupload')}</Label>
         {fields.dateiupload ? (
           <div className="flex items-center gap-3 rounded-lg border p-2">
             <div className="relative h-14 w-14 shrink-0 rounded-md bg-muted overflow-hidden">
@@ -1040,7 +1043,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 <label
                   className="text-xs text-primary hover:underline cursor-pointer"
                 >
-                  Ändern
+                  {t('fr_change')}
                   <input
                     type="file"
                     accept="image/*,.pdf"
@@ -1060,7 +1063,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                   className="text-xs text-muted-foreground hover:text-destructive"
                   onClick={() => setFields(f => ({ ...f, dateiupload: undefined }))}
                 >
-                  Entfernen
+                  {t('fr_remove')}
                 </button>
               </div>
             </div>
@@ -1070,7 +1073,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
             className="flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-muted-foreground/25 p-4 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
           >
             <IconUpload size={20} className="text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Datei hochladen</span>
+            <span className="text-sm text-muted-foreground">{t('fr_upload_file')}</span>
             <input
               type="file"
               accept="image/*,.pdf"
@@ -1090,10 +1093,10 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'ansprechpartner_vorname': (
       <div key="ansprechpartner_vorname" className="space-y-1.5">
-        <Label htmlFor="ansprechpartner_vorname">Vorname der Ansprechperson</Label>
+        <Label htmlFor="ansprechpartner_vorname">{fieldLabel('foerderantrag', 'ansprechpartner_vorname')}</Label>
         <Input
           id="ansprechpartner_vorname"
-          placeholder="z. B. Anna"
+          placeholder=""
           value={fields.ansprechpartner_vorname ?? ''}
           onChange={e => setFields(f => ({ ...f, ansprechpartner_vorname: e.target.value }))}
         />
@@ -1101,10 +1104,10 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'ansprechpartner_nachname': (
       <div key="ansprechpartner_nachname" className="space-y-1.5">
-        <Label htmlFor="ansprechpartner_nachname">Nachname der Ansprechperson</Label>
+        <Label htmlFor="ansprechpartner_nachname">{fieldLabel('foerderantrag', 'ansprechpartner_nachname')}</Label>
         <Input
           id="ansprechpartner_nachname"
-          placeholder="z. B. Schmidt"
+          placeholder=""
           value={fields.ansprechpartner_nachname ?? ''}
           onChange={e => setFields(f => ({ ...f, ansprechpartner_nachname: e.target.value }))}
         />
@@ -1112,7 +1115,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'ansprechpartner_telefon': (
       <div key="ansprechpartner_telefon" className="space-y-1.5">
-        <Label htmlFor="ansprechpartner_telefon">Telefon der Ansprechperson</Label>
+        <Label htmlFor="ansprechpartner_telefon">{fieldLabel('foerderantrag', 'ansprechpartner_telefon')}</Label>
         <Input
           id="ansprechpartner_telefon"
           value={fields.ansprechpartner_telefon ?? ''}
@@ -1122,11 +1125,11 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'ansprechpartner_email': (
       <div key="ansprechpartner_email" className="space-y-1.5">
-        <Label htmlFor="ansprechpartner_email">E-Mail der Ansprechperson</Label>
+        <Label htmlFor="ansprechpartner_email">{fieldLabel('foerderantrag', 'ansprechpartner_email')}</Label>
         <Input
           id="ansprechpartner_email"
           type="email"
-          placeholder="z. B. anna@beispiel.de"
+          placeholder=""
           value={fields.ansprechpartner_email ?? ''}
           onChange={e => setFields(f => ({ ...f, ansprechpartner_email: e.target.value }))}
         />
@@ -1134,10 +1137,10 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'bemerkungen': (
       <div key="bemerkungen" className="space-y-1.5">
-        <Label htmlFor="bemerkungen">Weitere Anmerkungen</Label>
+        <Label htmlFor="bemerkungen">{fieldLabel('foerderantrag', 'bemerkungen')}</Label>
         <Textarea
           id="bemerkungen"
-          placeholder="Zusätzliche Informationen, die wichtig sind..."
+          placeholder=""
           value={fields.bemerkungen ?? ''}
           onChange={e => setFields(f => ({ ...f, bemerkungen: e.target.value }))}
           rows={3}
@@ -1146,17 +1149,17 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     ),
     'datenschutz': (
       <div key="datenschutz" className="space-y-1.5">
-        <Label htmlFor="datenschutz">Ich habe die Datenschutzhinweise gelesen und stimme der Verarbeitung meiner Daten zu. <span className="text-destructive" aria-hidden="true">*</span></Label>
+        <Label htmlFor="datenschutz">{fieldLabel('foerderantrag', 'datenschutz')} <span className="text-destructive" aria-hidden="true">*</span></Label>
         <div className="flex items-center gap-2 pt-1">
           <Checkbox
             id="datenschutz"
             checked={!!fields.datenschutz}
             onCheckedChange={(v) => setFields(f => ({ ...f, datenschutz: !!v }))}
           />
-          <Label htmlFor="datenschutz" className="font-normal">Ich habe die Datenschutzhinweise gelesen und stimme der Verarbeitung meiner Daten zu.</Label>
+          <Label htmlFor="datenschutz" className="font-normal">{fieldLabel('foerderantrag', 'datenschutz')}</Label>
         </div>
         {showErrors && !fields.datenschutz && (
-          <p className="text-xs text-destructive mt-1">Pflichtfeld</p>
+          <p className="text-xs text-destructive mt-1">{t('required_hint')}</p>
         )}
       </div>
     ),
@@ -1229,9 +1232,9 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
     // Backend-Feld mit €-Label ODER virtueller Computed-Key, dessen Name nach Geld aussieht.
     const looksLikeCurrency = CURRENCY_KEYS.has(k) || /(?:kosten|preis|betrag|gesamt|netto|brutto|summe|mwst|rabatt|anzahlung|umsatz|saldo)/i.test(k);
     if (looksLikeCurrency) {
-      return n.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return n.toLocaleString(localeTag(), { style: 'currency', currency: CURRENCY, minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-    return n.toLocaleString('de-DE', { maximumFractionDigits: 2 });
+    return n.toLocaleString(localeTag(), { maximumFractionDigits: 2 });
   }
 
   return (
@@ -1253,14 +1256,14 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
               }`}
             >
               <IconSparkles className={`h-3.5 w-3.5 ${aiOpen ? '' : 'text-primary'}`} />
-              <span className="hidden sm:inline">KI-Ausfüllen</span>
+              <span className="hidden sm:inline">{t('smart_fill')}</span>
               <IconChevronDown className={`h-3 w-3 transition-transform ${aiOpen ? 'rotate-180' : ''}`} />
             </button>
           )}
         </DialogHeader>
         {enablePhotoScan && aiOpen && (
           <div id="ai-fill-panel" className="border-b bg-muted/20 px-6 py-4 space-y-3">
-            <p className="text-xs text-muted-foreground">Versteht Fotos, Dokumente und Text und füllt alles für dich aus</p>
+            <p className="text-xs text-muted-foreground">{t('scan_header_sub')}</p>
             <div className="flex items-start gap-2 pl-0.5">
               <Checkbox
                 id="ai-use-personal-info"
@@ -1270,21 +1273,21 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
               />
               <span className="text-xs text-muted-foreground leading-snug">
                 <Label htmlFor="ai-use-personal-info" className="text-xs font-normal text-muted-foreground cursor-pointer inline">
-                  KI-Assistent darf zusätzlich Informationen zu meiner Person verwenden
+                  {t('useinfo_label')}
                 </Label>
                 {' '}
                 <button type="button" onClick={handleShowProfileInfo} className="text-xs text-primary hover:underline whitespace-nowrap">
-                  {profileLoading ? 'Lade...' : '(mehr Infos)'}
+                  {profileLoading ? t('useinfo_loading') : `(${t('useinfo_more')})`}
                 </button>
               </span>
             </div>
             {showProfileInfo && (
               <div className="rounded-md border bg-muted/50 p-2 text-xs max-h-40 overflow-y-auto">
-                <p className="font-medium mb-1">Folgende Infos über dich können von der KI genutzt werden:</p>
+                <p className="font-medium mb-1">{t('profile_preamble')}</p>
                 {profileData ? Object.values(profileData).map((v, i) => (
                   <span key={i}>{i > 0 && ", "}{typeof v === "object" ? JSON.stringify(v) : String(v)}</span>
                 )) : (
-                  <span className="text-muted-foreground">Profil konnte nicht geladen werden</span>
+                  <span className="text-muted-foreground">{t('useinfo_error')}</span>
                 )}
               </div>
             )}
@@ -1315,8 +1318,8 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                     <IconLoader2 className="h-7 w-7 text-primary animate-spin" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-medium">KI analysiert...</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Felder werden automatisch ausgefüllt</p>
+                    <p className="text-sm font-medium">{t('scan_analyzing')}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t('scan_analyzing_sub')}</p>
                   </div>
                 </div>
               ) : scanSuccess ? (
@@ -1325,8 +1328,8 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                     <IconCircleCheck className="h-7 w-7 text-green-600 dark:text-green-400" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-medium text-green-700 dark:text-green-400">Felder ausgefüllt!</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Prüfe die Werte und passe sie ggf. an</p>
+                    <p className="text-sm font-medium text-green-700 dark:text-green-400">{t('scan_success')}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t('scan_success_sub')}</p>
                   </div>
                 </div>
               ) : (
@@ -1335,7 +1338,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                     <IconPhotoPlus className="h-7 w-7 text-primary/70" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-medium">Foto oder Dokument hierher ziehen oder auswählen</p>
+                    <p className="text-sm font-medium">{t('scan_upload')}</p>
                   </div>
                 </div>
               )}
@@ -1359,11 +1362,11 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
             <div className="grid grid-cols-3 gap-2">
               <Button type="button" variant="outline" size="sm" className="h-10 text-xs" disabled={scanning}
                 onClick={e => { e.stopPropagation(); cameraInputRef.current?.click(); }}>
-                <IconCamera className="h-3.5 w-3.5 mr-1" />Kamera
+                <IconCamera className="h-3.5 w-3.5 mr-1" />{t('scan_camera_btn')}
               </Button>
               <Button type="button" variant="outline" size="sm" className="h-10 text-xs" disabled={scanning}
                 onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}>
-                <IconUpload className="h-3.5 w-3.5 mr-1" />Foto wählen
+                <IconUpload className="h-3.5 w-3.5 mr-1" />{t('scan_file_btn')}
               </Button>
               <Button type="button" variant="outline" size="sm" className="h-10 text-xs" disabled={scanning}
                 onClick={e => {
@@ -1374,13 +1377,13 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                     setTimeout(() => { if (fileInputRef.current) fileInputRef.current.accept = 'image/*,application/pdf'; }, 100);
                   }
                 }}>
-                <IconFileText className="h-3.5 w-3.5 mr-1" />Dokument
+                <IconFileText className="h-3.5 w-3.5 mr-1" />{t('scan_doc_btn')}
               </Button>
             </div>
 
             <div className="relative">
               <Textarea
-                placeholder="Text eingeben oder einfügen, z.B. Notizen, E-Mails, Beschreibungen..."
+                placeholder={t('scan_text_placeholder')}
                 value={aiText}
                 onChange={e => {
                   setAiText(e.target.value);
@@ -1408,7 +1411,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                     if (text) setAiText(prev => prev ? prev + '\n' + text : text);
                   } catch {}
                 }}
-                title="Paste"
+                title={t('paste')}
               >
                 <IconClipboard className="h-4 w-4" />
               </button>
@@ -1422,7 +1425,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
                 disabled={scanning}
                 onClick={() => handleAiExtract()}
               >
-                <IconSparkles className="h-3.5 w-3.5 mr-1.5" />Analysieren
+                <IconSparkles className="h-3.5 w-3.5 mr-1.5" />{t('scan_text_analyze')}
               </Button>
             )}
           </div>
@@ -1517,7 +1520,7 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
             {showErrors && missingRequired.length > 0 && (
               <p className="text-xs text-destructive flex items-center gap-1.5" role="alert">
                 <IconAlertCircle className="h-3.5 w-3.5 shrink-0" />
-                Bitte fülle die markierten Pflichtfelder aus.
+                {t('missing_required')}
               </p>
             )}
             {recordId && (
@@ -1533,13 +1536,13 @@ export function FoerderantragDialog({ open, onClose, onSubmit, defaultValues, re
             </div>
           )}
           <DialogFooter className="sticky bottom-0 border-t bg-background/95 backdrop-blur px-6 py-3 gap-2 max-sm:flex-row">
-            <Button type="button" variant="outline" onClick={onClose} className="max-sm:h-12 max-sm:flex-1 max-sm:text-base">Abbrechen</Button>
+            <Button type="button" variant="outline" onClick={onClose} className="max-sm:h-12 max-sm:flex-1 max-sm:text-base">{t('cancel')}</Button>
             <Button
               type="submit"
               className="max-sm:h-12 max-sm:flex-1 max-sm:text-base"
               disabled={saving || !isDirty || (showErrors && missingRequired.length > 0)}
             >
-              {saving ? 'Speichern...' : defaultValues ? 'Speichern' : 'Erstellen'}
+              {saving ? t('saving') : defaultValues ? t('save') : t('create')}
             </Button>
           </DialogFooter>
         </form>
